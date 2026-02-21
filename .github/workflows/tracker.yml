@@ -1,0 +1,49 @@
+name: Daily YouTube Tracker
+
+on:
+  schedule:
+    # Runs every day at 2:00 PM UTC
+    # To change timezone: e.g. 6:30 UTC = 2PM IST (India), 22:00 UTC = 2PM PST
+    - cron: '0 14 * * *'
+  workflow_dispatch:   # allow manual run from GitHub UI at any time
+
+jobs:
+  run-tracker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run YouTube Tracker
+        env:
+          YOUTUBE_API_KEY:  ${{ secrets.YOUTUBE_API_KEY }}
+          SMTP_HOST:        ${{ secrets.SMTP_HOST }}
+          SMTP_PORT:        ${{ secrets.SMTP_PORT }}
+          SMTP_USER:        ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD:    ${{ secrets.SMTP_PASSWORD }}
+          RECIPIENT_EMAIL:  ${{ secrets.RECIPIENT_EMAIL }}
+        run: python main.py
+
+      - name: Upload log as artifact (for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracker-log-${{ github.run_id }}
+          path: tracker.log
+          retention-days: 7

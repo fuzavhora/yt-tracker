@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Competitor Tracker — YouTube Intelligence Automation</title>
+    <meta name="description"
+        content="Automatically track outperforming AI niche YouTube videos daily. Get a beautiful email report every day at 2PM with trending competitor content." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* ── Reset & Base ──────────────────────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --red: #ff4757;
+            --purple: #7c3aed;
+            --cyan: #06b6d4;
+            --gold: #f59e0b;
+            --dark: #0a0a14;
+            --dark2: #10101e;
+            --dark3: #16162a;
+            --glass: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e2e8f0;
+            --muted: rgba(255, 255, 255, 0.45);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        /* ── 3D Canvas ─────────────────────────────────────────────────────────── */
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── Glow Orbs ─────────────────────────────────────────────────────────── */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.18;
+            pointer-events: none;
+            z-index: 0;
+            animation: orbFloat 12s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--purple);
+            top: -200px;
+            left: -200px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: var(--red);
+            top: 30%;
+            right: -150px;
+            animation-delay: -4s;
+        }
+
+        .orb-3 {
+            width: 400px;
+            height: 400px;
+            background: var(--cyan);
+            bottom: 0;
+            left: 30%;
+            animation-delay: -8s;
+        }
+
+        @keyframes orbFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(30px, 40px) scale(1.1);
+            }
+        }
+
+        /* ── Noise overlay ─────────────────────────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.4;
+        }
+
+        /* ── Nav ───────────────────────────────────────────────────────────────── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 18px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(10, 10, 20, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .nav-logo span {
+            color: var(--red);
+        }
+
+        .logo-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--red);
+            box-shadow: 0 0 12px var(--red);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 12px var(--red);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 24px var(--red);
+                transform: scale(1.3);
+            }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--muted);
+            transition: color .2s;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        .nav-cta {
+            background: linear-gradient(135deg, var(--red), #c44569);
+            color: #fff !important;
+            padding: 9px 22px;
+            border-radius: 8px;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            transition: transform .2s, box-shadow .2s !important;
+            box-shadow: 0 4px 20px rgba(255, 71, 87, 0.3);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 28px rgba(255, 71, 87, 0.45) !important;
+        }
+
+        /* ── Sections wrapper ──────────────────────────────────────────────────── */
+        .section-wrap {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ── HERO ──────────────────────────────────────────────────────────────── */
+        #hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+        }
+
+        .hero-inner {
+            max-width: 820px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid rgba(124, 58, 237, 0.35);
+            border-radius: 30px;
+            padding: 7px 18px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #a78bfa;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            animation: fadeUp .6s ease both;
+        }
+
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #a78bfa;
+            animation: pulse 1.5s infinite;
+        }
+
+        .hero-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(40px, 7vw, 76px);
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -2px;
+            color: #fff;
+            margin-bottom: 24px;
+            animation: fadeUp .7s .1s ease both;
+        }
+
+        .hero-title .grad {
+            background: linear-gradient(135deg, var(--red) 0%, #c44569 40%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-size: clamp(16px, 2.2vw, 20px);
+            color: var(--muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.7;
+            animation: fadeUp .8s .2s ease both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 60px;
+            animation: fadeUp .9s .3s ease both;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--red), #c44569);
+            color: #fff;
+            padding: 15px 32px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 8px 32px rgba(255, 71, 87, 0.35);
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 40px rgba(255, 71, 87, 0.5);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 15px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            backdrop-filter: blur(10px);
+            transition: transform .2s, background .2s, border-color .2s;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Email preview pill */
+        .email-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 10px 22px;
+            font-size: 13px;
+            color: var(--muted);
+            backdrop-filter: blur(12px);
+            animation: fadeUp 1s .4s ease both;
+        }
+
+        .email-pill .pill-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        /* ── STATS ─────────────────────────────────────────────────────────────── */
+        #stats {
+            padding: 40px 24px 80px;
+        }
+
+        .stats-grid {
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 24px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform .3s, border-color .3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .stat-num {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 40px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ── FEATURES ──────────────────────────────────────────────────────────── */
+        #features {
+            padding: 80px 24px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-tag {
+            display: inline-block;
+            background: rgba(255, 71, 87, 0.12);
+            border: 1px solid rgba(255, 71, 87, 0.25);
+            color: var(--red);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(28px, 4vw, 44px);
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -1px;
+            line-height: 1.2;
+            margin-bottom: 14px;
+        }
+
+        .section-sub {
+            font-size: 16px;
+            color: var(--muted);
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--dark3);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            transition: transform .3s, box-shadow .3s, border-color .3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            background: radial-gradient(circle at top left, var(--card-glow, transparent) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity .4s;
+            pointer-events: none;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px) rotateX(2deg) rotateY(-2deg);
+            border-color: rgba(255, 255, 255, 0.14);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .feature-card:hover::after {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 20px;
+            background: var(--icon-bg);
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        /* ── HOW IT WORKS ──────────────────────────────────────────────────────── */
+        #how {
+            padding: 80px 24px;
+            background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.04), transparent);
+        }
+
+        .steps-wrap {
+            max-width: 750px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .steps-line {
+            position: absolute;
+            left: 28px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--purple), var(--red), var(--cyan));
+        }
+
+        .step {
+            display: flex;
+            gap: 28px;
+            margin-bottom: 44px;
+            animation: fadeRight .5s ease both;
+        }
+
+        .step-num {
+            flex-shrink: 0;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--dark3);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff;
+            position: relative;
+            z-index: 1;
+            transition: border-color .3s, box-shadow .3s;
+        }
+
+        .step:hover .step-num {
+            border-color: var(--red);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+        }
+
+        .step-body {
+            padding-top: 12px;
+        }
+
+        .step-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .step-desc {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .step-tag {
+            display: inline-block;
+            background: rgba(255, 71, 87, 0.12);
+            border: 1px solid rgba(255, 71, 87, 0.25);
+            color: var(--red);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+
+        /* ── EMAIL PREVIEW ─────────────────────────────────────────────────────── */
+        #preview {
+            padding: 80px 24px;
+        }
+
+        .preview-wrap {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--dark3);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-wrap::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--red), transparent);
+        }
+
+        .preview-header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .preview-subject {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.25);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .mock-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .mock-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .mock-thumb {
+            height: 120px;
+            background: linear-gradient(135deg, var(--dark), var(--dark3));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        .mock-body {
+            padding: 14px;
+        }
+
+        .mock-channel {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--red);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .mock-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .mock-stats {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mock-stat {
+            flex: 1;
+            background: rgba(6, 182, 212, 0.08);
+            border-radius: 6px;
+            padding: 6px;
+            text-align: center;
+        }
+
+        .mock-stat-val {
+            font-size: 13px;
+            font-weight: 800;
+            color: #06b6d4;
+        }
+
+        .mock-stat-label {
+            font-size: 9px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        /* ── SOCIAL ────────────────────────────────────────────────────────────── */
+        #social {
+            padding: 80px 24px;
+            text-align: center;
+        }
+
+        .social-grid {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .social-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--dark3);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 24px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 15px;
+            transition: transform .3s, border-color .3s, box-shadow .3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .social-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--sc-bg);
+            opacity: 0;
+            transition: opacity .3s;
+        }
+
+        .social-card:hover {
+            transform: translateY(-6px) scale(1.03);
+            border-color: var(--sc-color);
+            box-shadow: 0 12px 40px var(--sc-shadow);
+        }
+
+        .social-card:hover::before {
+            opacity: 1;
+        }
+
+        .social-icon {
+            font-size: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .social-name {
+            position: relative;
+            z-index: 1;
+        }
+
+        .social-handle {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 400;
+            display: block;
+        }
+
+        /* YouTube card */
+        .sc-yt {
+            --sc-color: #ff0000;
+            --sc-shadow: rgba(255, 0, 0, 0.2);
+            --sc-bg: rgba(255, 0, 0, 0.06);
+        }
+
+        .sc-tw {
+            --sc-color: #1da1f2;
+            --sc-shadow: rgba(29, 161, 242, 0.2);
+            --sc-bg: rgba(29, 161, 242, 0.06);
+        }
+
+        .sc-li {
+            --sc-color: #0a66c2;
+            --sc-shadow: rgba(10, 102, 194, 0.2);
+            --sc-bg: rgba(10, 102, 194, 0.06);
+        }
+
+        .sc-ig {
+            --sc-color: #e1306c;
+            --sc-shadow: rgba(225, 48, 108, 0.2);
+            --sc-bg: rgba(225, 48, 108, 0.06);
+        }
+
+        .sc-fb {
+            --sc-color: #1877f2;
+            --sc-shadow: rgba(24, 119, 242, 0.2);
+            --sc-bg: rgba(24, 119, 242, 0.06);
+        }
+
+        /* ── CONTACT ────────────────────────────────────────────────────────────── */
+        #contact {
+            padding: 80px 24px;
+        }
+
+        .contact-wrap {
+            max-width: 680px;
+            margin: 0 auto;
+            background: var(--dark3);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 48px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--purple), var(--red), var(--cyan));
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #fff;
+            outline: none;
+            transition: border-color .25s, box-shadow .25s, background .25s;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            border-color: rgba(255, 71, 87, 0.6);
+            background: rgba(255, 71, 87, 0.04);
+            box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.6;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, var(--red), #c44569);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform .2s, box-shadow .2s, opacity .2s;
+            box-shadow: 0 8px 28px rgba(255, 71, 87, 0.3);
+            margin-top: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(255, 71, 87, 0.45);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-status {
+            display: none;
+            margin-top: 16px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .form-status.success {
+            display: block;
+            background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #4ade80;
+        }
+
+        .form-status.error {
+            display: block;
+            background: rgba(255, 71, 87, 0.12);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ff6b7a;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .contact-wrap {
+                padding: 28px 20px;
+            }
+        }
+
+        /* ── FOOTER ────────────────────────────────────────────────────────────── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 24px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        footer a {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        .footer-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .footer-logo span {
+            color: var(--red);
+        }
+
+        /* ── Animations ────────────────────────────────────────────────────────── */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeRight {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity .6s ease, transform .6s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── Responsive ────────────────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            nav {
+                padding: 14px 20px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            #hero {
+                padding: 100px 20px 60px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .mock-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .steps-line {
+                left: 20px;
+            }
+
+            .step-num {
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .social-grid {
+                gap: 12px;
+            }
+
+            .preview-wrap {
+                padding: 24px 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Three.js Background -->
+    <canvas id="canvas-bg"></canvas>
+
+    <!-- Glow Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <!-- ═══ NAV ═══════════════════════════════════════════════════════════════ -->
+    <nav>
+        <div class="nav-logo">
+            <div class="logo-dot"></div>
+            AI Competitor <span>Tracker</span>
+        </div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#how">How It Works</a>
+            <a href="#preview">Preview</a>
+            <a href="#contact">Contact</a>
+            <a href="#social">Connect</a>
+
+        </div>
+    </nav>
+
+    <div class="section-wrap">
+
+        <!-- ═══ HERO ════════════════════════════════════════════════════════════ -->
+        <section id="hero">
+            <div class="hero-inner">
+                <div class="hero-badge">
+                    <div class="dot"></div> AI-Powered · Fully Automated · Daily Insights
+                </div>
+                <h1 class="hero-title">
+                    Stop Guessing.<br>
+                    Start <span class="grad">Outperforming.</span>
+                </h1>
+                <p class="hero-sub">
+                    An intelligent automation that scans the entire AI &amp; automation YouTube niche every 24 hours,
+                    identifies viral competitor videos, and delivers a beautiful report straight to your inbox — every
+                    day at 2PM.
+                </p>
+                <div class="hero-buttons">
+
+                    <a href="#how" class="btn-secondary">
+                        ⚙ See How It Works
+                    </a>
+                </div>
+                <div class="email-pill">
+                    <span class="pill-dot"></span>
+                    Daily report sent to your inbox · <strong style="color:#fff;">20 outperforming videos found
+                        today</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ STATS ═══════════════════════════════════════════════════════════ -->
+        <section id="stats">
+            <div class="stats-grid">
+                <div class="stat-card reveal" style="--accent: linear-gradient(90deg, #ff4757, #c44569);">
+                    <div class="stat-num"
+                        style="background:linear-gradient(135deg,#ff4757,#c44569);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"
+                        data-count="278">0</div>
+                    <div class="stat-label">Videos Scanned Daily</div>
+                </div>
+                <div class="stat-card reveal" style="--accent: linear-gradient(90deg, #06b6d4, #0891b2);">
+                    <div class="stat-num"
+                        style="background:linear-gradient(135deg,#06b6d4,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"
+                        data-count="20">0</div>
+                    <div class="stat-label">Outperformers Found</div>
+                </div>
+                <div class="stat-card reveal" style="--accent: linear-gradient(90deg, #f59e0b, #d97706);">
+                    <div class="stat-num"
+                        style="background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;"
+                        data-count="10">0</div>
+                    <div class="stat-label">AI Keywords Tracked</div>
+                </div>
+                <div class="stat-card reveal" style="--accent: linear-gradient(90deg, #7c3aed, #6d28d9);">
+                    <div class="stat-num"
+                        style="background:linear-gradient(135deg,#7c3aed,#6d28d9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                        24h</div>
+                    <div class="stat-label">Real-Time Window</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ FEATURES ════════════════════════════════════════════════════════ -->
+        <section id="features">
+            <div class="section-header reveal">
+                <div class="section-tag">Features</div>
+                <h2 class="section-title">Everything You Need to<br>Stay Ahead</h2>
+                <p class="section-sub">Built specifically for AI content creators who want data-driven decisions, not
+                    guesswork.</p>
+            </div>
+            <div class="features-grid">
+
+                <div class="feature-card reveal" style="--card-glow: rgba(255,71,87,0.2);">
+                    <div class="feature-icon" style="--icon-bg: rgba(255,71,87,0.12);">🔍</div>
+                    <div class="feature-title">Keyword-Based Discovery</div>
+                    <div class="feature-desc">Searches 10 AI-specific keywords across all of YouTube — not just a fixed
+                        list of channels. Discovers viral content from any creator in the niche.</div>
+                </div>
+
+                <div class="feature-card reveal" style="--card-glow: rgba(124,58,237,0.2);">
+                    <div class="feature-icon" style="--icon-bg: rgba(124,58,237,0.12);">⚡</div>
+                    <div class="feature-title">24-Hour Viral Detection</div>
+                    <div class="feature-desc">Focuses on the last 24 hours only — so you see what's trending right now,
+                        not last week's content. Perfect for timely topic inspiration.</div>
+                </div>
+
+                <div class="feature-card reveal" style="--card-glow: rgba(6,182,212,0.2);">
+                    <div class="feature-icon" style="--icon-bg: rgba(6,182,212,0.12);">📊</div>
+                    <div class="feature-title">Smart Outperformance Score</div>
+                    <div class="feature-desc">Flags videos with 20K+ views in 24h, 5K+ views with 5%+ engagement, or
+                        exceptional engagement rate — using multiple signal layers.</div>
+                </div>
+
+                <div class="feature-card reveal" style="--card-glow: rgba(245,158,11,0.2);">
+                    <div class="feature-icon" style="--icon-bg: rgba(245,158,11,0.12);">📧</div>
+                    <div class="feature-title">Premium Email Reports</div>
+                    <div class="feature-desc">Beautifully designed HTML email with thumbnail previews, view counts,
+                        engagement rates, color-coded badges, and one-click watch buttons.</div>
+                </div>
+
+                <div class="feature-card reveal" style="--card-glow: rgba(34,197,94,0.2);">
+                    <div class="feature-icon" style="--icon-bg: rgba(34,197,94,0.12);">🕑</div>
+                    <div class="feature-title">Daily 2PM Automation</div>
+                    <div class="feature-desc">Runs automatically every day at your chosen time via cron job. Zero manual
+                        effort — just open your inbox and get your report.</div>
+                </div>
+
+                <div class="feature-card reveal" style="--card-glow: rgba(239,68,68,0.2);">
+                    <div class="feature-icon" style="--icon-bg: rgba(239,68,68,0.12);">🛡</div>
+                    <div class="feature-title">Always Reliable</div>
+                    <div class="feature-desc">No scraping, no grey-area workarounds. The tracker uses an official,
+                        approved data source — so it's stable, trustworthy, and built to run every single day without
+                        interruptions.</div>
+                </div>
+            </div>
+
+    </div>
+    </section>
+
+    <!-- ═══ HOW IT WORKS ═════════════════════════════════════════════════════ -->
+    <section id="how">
+        <div class="section-header reveal">
+            <div class="section-tag">Process</div>
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-sub">Four simple steps that run completely on autopilot every single day.</p>
+        </div>
+        <div class="steps-wrap">
+            <div class="steps-line"></div>
+
+            <div class="step reveal">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <div class="step-title">Keyword Search Across YouTube</div>
+                    <div class="step-desc">Each day at 2PM, the tracker fires off searches for 10 curated AI/automation
+                        keywords — "AI tools 2025", "AI agents explained", "n8n automation workflow", and more. Every
+                        search returns the freshest videos posted in the last 24 hours.</div>
+                </div>
+            </div>
+
+            <div class="step reveal">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <div class="step-title">Deduplicate &amp; Fetch Statistics</div>
+                    <div class="step-desc">All video IDs are merged and deduplicated — a video appearing in multiple
+                        keyword results is only analyzed once. Then full statistics (views, likes, comments) are fetched
+                        efficiently across all results.</div>
+                </div>
+            </div>
+
+            <div class="step reveal">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <div class="step-title">Analyze Outperformance</div>
+                    <div class="step-desc">Each video is scored against three criteria: 20K+ views (viral signal), 5K+
+                        views + 5%+ engagement (quality signal), or exceptional engagement rate alone. Videos meeting
+                        any criteria are flagged with a reason.</div>
+                </div>
+            </div>
+
+            <div class="step reveal">
+                <div class="step-num">4</div>
+                <div class="step-body">
+                    <div class="step-title">Send Beautiful Email Report</div>
+                    <div class="step-desc">A premium HTML email is composed with all outperforming videos sorted by
+                        views — showing thumbnail, channel, title, stats, and why each video was flagged. Delivered to
+                        your inbox in seconds.</div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ═══ EMAIL PREVIEW ════════════════════════════════════════════════════ -->
+    <section id="preview">
+        <div class="section-header reveal">
+            <div class="section-tag">Preview</div>
+            <h2 class="section-title">What Lands in Your Inbox</h2>
+            <p class="section-sub">A clean, beautiful email every morning — no dashboards, no logins.</p>
+        </div>
+        <div class="preview-wrap reveal">
+            <div class="preview-header">
+                <div class="preview-subject">🔥 20 Outperforming AI Videos Today — February 20, 2026</div>
+            </div>
+            <div class="mock-cards">
+                <div class="mock-card">
+                    <div class="mock-thumb">🚀</div>
+                    <div class="mock-body">
+                        <div class="mock-channel">📺 AI News & Strategy Daily</div>
+                        <div class="mock-title">$1,000 a Day in AI Costs. Three Engineers. No Writing Code...</div>
+                        <div class="mock-stats">
+                            <div class="mock-stat">
+                                <div class="mock-stat-val">50.9K</div>
+                                <div class="mock-stat-label">Views</div>
+                            </div>
+                            <div class="mock-stat" style="background:rgba(245,158,11,0.08);">
+                                <div class="mock-stat-val" style="color:#f59e0b;">4.6%</div>
+                                <div class="mock-stat-label">Engagement</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mock-card">
+                    <div class="mock-thumb">🤖</div>
+                    <div class="mock-body">
+                        <div class="mock-channel">📺 AI Explained</div>
+                        <div class="mock-title">Gemini 3.1 Pro and the Downfall of Benchmarks: Welcome to the New
+                            Era</div>
+                        <div class="mock-stats">
+                            <div class="mock-stat">
+                                <div class="mock-stat-val">49.1K</div>
+                                <div class="mock-stat-label">Views</div>
+                            </div>
+                            <div class="mock-stat" style="background:rgba(245,158,11,0.08);">
+                                <div class="mock-stat-val" style="color:#f59e0b;">5.0%</div>
+                                <div class="mock-stat-label">Engagement</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ CONTACT ══════════════════════════════════════════════════════════ -->
+    <section id="contact">
+        <div class="section-header reveal">
+            <div class="section-tag">Contact</div>
+            <h2 class="section-title">Get In Touch</h2>
+            <p class="section-sub">Have a question, collaboration idea, or want to know more? Drop a message and I'll
+                get back to you.</p>
+        </div>
+        <div class="contact-wrap reveal">
+            <form id="contactForm">
+                <!-- Web3Forms hidden fields -->
+                <input type="hidden" name="access_key" value="d00f455b-484f-48f2-9b4d-0ca7512fff40" />
+                <input type="hidden" name="subject" value="New Contact from AI Tracker Landing Page" />
+                <input type="hidden" name="from_name" value="AI Tracker Website" />
+                <input type="checkbox" name="botcheck" style="display:none;" />
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="cf-name">Your Name</label>
+                        <input class="form-input" type="text" id="cf-name" name="name" placeholder="Fuzail Vhora"
+                            required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="cf-email">Email Address</label>
+                        <input class="form-input" type="email" id="cf-email" name="email" placeholder="you@example.com"
+                            required />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cf-req">Your Requirement</label>
+                    <textarea class="form-textarea" id="cf-req" name="message"
+                        placeholder="Tell me what you need, have a question, or want to collaborate..."
+                        required></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    ✉ Send Message
+                </button>
+
+                <div class="form-status" id="formStatus"></div>
+            </form>
+        </div>
+    </section>
+
+    <!-- ═══ SOCIAL ════════════════════════════════════════════════════════════ -->
+    <section id="social">
+        <div class="section-header reveal">
+            <div class="section-tag">Connect</div>
+            <h2 class="section-title">Follow The Solo Entrepreneur</h2>
+            <p class="section-sub">AI, automation, no-code tools, and startup ideas — join the community.</p>
+        </div>
+        <div class="social-grid">
+
+
+
+            <a href="https://x.com/fmvhora" target="_blank" class="social-card sc-tw">
+                <span class="social-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#1da1f2">
+                        <path
+                            d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                </span>
+                <div class="social-name">Twitter / X<span class="social-handle">@thesoloentrepreneur</span></div>
+            </a>
+
+            <a href="https://www.linkedin.com/in/fuzail-vhora-8188601a6/" target="_blank" class="social-card sc-li">
+                <span class="social-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#0a66c2">
+                        <path
+                            d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                    </svg>
+                </span>
+                <div class="social-name">LinkedIn<span class="social-handle">The Solo Entrepreneur</span></div>
+            </a>
+
+            <a href="https://www.instagram.com/f.m.vhora?utm_source=qr&igsh=a2R5MnhxZGw0czYx" target="_blank"
+                class="social-card sc-ig">
+                <span class="social-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="url(#ig-grad)">
+                        <defs>
+                            <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#f09433" />
+                                <stop offset="25%" stop-color="#e6683c" />
+                                <stop offset="50%" stop-color="#dc2743" />
+                                <stop offset="75%" stop-color="#cc2366" />
+                                <stop offset="100%" stop-color="#bc1888" />
+                            </linearGradient>
+                        </defs>
+                        <path
+                            d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
+                    </svg>
+                </span>
+                <div class="social-name">Instagram<span class="social-handle">@thesoloentrepreneur07</span></div>
+            </a>
+
+            <a href="https://www.facebook.com/share/1C9mvoJihR/" target="_blank" class="social-card sc-fb">
+                <span class="social-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#1877f2">
+                        <path
+                            d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                    </svg>
+                </span>
+                <div class="social-name">Facebook<span class="social-handle">The Solo Entrepreneur</span></div>
+            </a>
+
+        </div>
+    </section>
+
+    </div>
+
+    <!-- ═══ FOOTER ════════════════════════════════════════════════════════════ -->
+    <footer>
+        <span class="footer-logo">AI Competitor <span>Tracker</span></span>
+        <p>Hosted on GitHub Pages</p>
+        <p style="margin-top:10px; font-size:13px; color:rgba(255,255,255,0.5);">Created by <strong
+                style="color:#ff4757;">Fuzail Vhora</strong></p>
+        <p style="margin-top:6px; font-size:11px; opacity:.4;">© 2026 Fuzail Vhora. All rights reserved.</p>
+    </footer>
+
+
+    <!-- ═══ SCRIPTS ═══════════════════════════════════════════════════════════ -->
+    <script>
+        /* ── Three.js 3D Particle Background ──────────────────────────────────── */
+        (function () {
+            const canvas = document.getElementById('canvas-bg');
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            /* Particles */
+            const PARTICLE_COUNT = 1800;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(PARTICLE_COUNT * 3);
+            const colors = new Float32Array(PARTICLE_COUNT * 3);
+
+            const palette = [
+                new THREE.Color('#ff4757'),
+                new THREE.Color('#7c3aed'),
+                new THREE.Color('#06b6d4'),
+                new THREE.Color('#f59e0b'),
+                new THREE.Color('#ffffff'),
+            ];
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 20;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+                const c = palette[Math.floor(Math.random() * palette.length)];
+                colors[i * 3] = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.04,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.65,
+                sizeAttenuation: true,
+            });
+
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            /* Connecting lines (sparse) */
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x7c3aed, transparent: true, opacity: 0.06 });
+            for (let i = 0; i < 60; i++) {
+                const pts = [];
+                for (let j = 0; j < 2; j++) {
+                    pts.push(new THREE.Vector3(
+                        (Math.random() - 0.5) * 18,
+                        (Math.random() - 0.5) * 18,
+                        (Math.random() - 0.5) * 8,
+                    ));
+                }
+                scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+            }
+
+            /* Mouse parallax */
+            let mx = 0, my = 0;
+            document.addEventListener('mousemove', e => {
+                mx = (e.clientX / window.innerWidth - 0.5) * 0.3;
+                my = (e.clientY / window.innerHeight - 0.5) * 0.3;
+            });
+
+            /* Resize */
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            /* Animate */
+            let t = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                t += 0.0003;
+                particles.rotation.y = t + mx;
+                particles.rotation.x = t * 0.4 + my;
+                renderer.render(scene, camera);
+            }
+            animate();
+        })();
+
+        /* ── Scroll Reveal ────────────────────────────────────────────────────── */
+        (function () {
+            const els = document.querySelectorAll('.reveal');
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach((e, i) => {
+                    if (e.isIntersecting) {
+                        setTimeout(() => e.target.classList.add('visible'), i * 80);
+                        io.unobserve(e.target);
+                    }
+                });
+            }, { threshold: 0.12 });
+            els.forEach(el => io.observe(el));
+        })();
+
+        /* ── Animated Counters ────────────────────────────────────────────────── */
+        (function () {
+            const counters = document.querySelectorAll('[data-count]');
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) return;
+                    const el = entry.target;
+                    const end = parseInt(el.dataset.count);
+                    const dur = 1800;
+                    const start = performance.now();
+                    function update(now) {
+                        const prog = Math.min((now - start) / dur, 1);
+                        const ease = 1 - Math.pow(1 - prog, 4);
+                        el.textContent = Math.round(ease * end);
+                        if (prog < 1) requestAnimationFrame(update);
+                    }
+                    requestAnimationFrame(update);
+                    io.unobserve(el);
+                });
+            }, { threshold: 0.5 });
+            counters.forEach(c => io.observe(c));
+        })();
+
+        /* ── 3D card tilt ─────────────────────────────────────────────────────── */
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const r = card.getBoundingClientRect();
+                const x = e.clientX - r.left;
+                const y = e.clientY - r.top;
+                const rx = ((y / r.height) - 0.5) * -14;
+                const ry = ((x / r.width) - 0.5) * 14;
+                card.style.transform = `translateY(-8px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
+        });
+        /* ── Contact Form Submission (Web3Forms) ─────────────────────────────── */
+        document.getElementById('contactForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const status = document.getElementById('formStatus');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Sending...';
+            status.className = 'form-status';
+
+            const data = new FormData(this);
+
+            try {
+                const res = await fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    body: data,
+                });
+                const json = await res.json();
+
+                if (json.success) {
+                    status.className = 'form-status success';
+                    status.textContent = '✅ Message sent! I\'ll get back to you soon.';
+                    this.reset();
+                } else {
+                    throw new Error(json.message || 'Submission failed');
+                }
+            } catch (err) {
+                status.className = 'form-status error';
+                status.textContent = '❌ Something went wrong. Please try again or email directly.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✉ Send Message';
+            }
+        });
+    </script>
+
+</body>
+
+</html>
