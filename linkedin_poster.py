@@ -128,7 +128,7 @@ class LinkedInPoster:
 
         # Add companies one by one until we hit the char limit
         company_lines = []
-        remaining = MAX_CHARS - len(header) - len(hashtag_line)
+        remaining = MAX_CHARS - len(header) - len(footer) - len(hashtag_line)
 
         for company in companies:
             line = f"- {company}\n"
@@ -139,7 +139,7 @@ class LinkedInPoster:
             company_lines.append(line)
             remaining -= len(line)
 
-        return header + "".join(company_lines) + hashtag_line
+        return header + "".join(company_lines) + footer + hashtag_line
 
     def create_post(self, text: str) -> bool:
         """
