@@ -1,5 +1,7 @@
 # Secrets — NEVER commit these
 .env
+google_credentials.json
+*-service-account*.json
 
 # Python
 venv/
