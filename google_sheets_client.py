@@ -26,6 +26,16 @@ HEADERS = [
     "Posted To LinkedIn",
 ]
 
+HIRING_POSTS_HEADERS = [
+    "Date Scraped",
+    "Post Author",
+    "Company Name",
+    "Post Title",
+    "Post Snippet",
+    "Post URL",
+    "Posted To LinkedIn",
+]
+
 
 class GoogleSheetsClient:
     """Read/write job data to Google Sheets."""
@@ -171,3 +181,68 @@ class GoogleSheetsClient:
                 self.worksheet.update_cell(cell.row, posted_col_index, "Yes")
         except Exception as e:
             logger.warning(f"Could not mark job as posted: {e}")
+
+    # ── Hiring Posts worksheet ────────────────────────────────────────────────
+
+    def _get_hiring_posts_worksheet(self, worksheet_name: str):
+        """Get or create the Hiring Posts worksheet."""
+        try:
+            ws = self.spreadsheet.worksheet(worksheet_name)
+        except gspread.WorksheetNotFound:
+            logger.info(f"Worksheet '{worksheet_name}' not found, creating it...")
+            ws = self.spreadsheet.add_worksheet(
+                title=worksheet_name, rows=1000, cols=len(HIRING_POSTS_HEADERS)
+            )
+
+        first_row = ws.row_values(1)
+        if not first_row or first_row != HIRING_POSTS_HEADERS:
+            ws.update("A1", [HIRING_POSTS_HEADERS])
+            logger.info("Hiring Posts sheet headers initialised.")
+
+        return ws
+
+    def append_hiring_posts(self, posts: list, worksheet_name: str) -> int:
+        """
+        Append new hiring posts to the Hiring Posts worksheet.
+
+        Args:
+            posts: List of post dicts from the scraper
+            worksheet_name: Name of the hiring posts worksheet tab
+
+        Returns:
+            Number of new posts added
+        """
+        ws = self._get_hiring_posts_worksheet(worksheet_name)
+
+        # Get existing URLs for dedup
+        try:
+            url_col = HIRING_POSTS_HEADERS.index("Post URL") + 1
+            existing_urls = set(ws.col_values(url_col)[1:])
+        except Exception:
+            existing_urls = set()
+
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        new_rows = []
+        for post in posts:
+            if post.get("post_url") in existing_urls:
+                continue
+
+            row = [
+                today,
+                post.get("post_author", "N/A"),
+                post.get("company_name", "N/A"),
+                post.get("post_title", "N/A"),
+                post.get("post_snippet", "N/A"),
+                post.get("post_url", ""),
+                "No",
+            ]
+            new_rows.append(row)
+
+        if new_rows:
+            ws.append_rows(new_rows, value_input_option="USER_ENTERED")
+            logger.info(f"Added {len(new_rows)} new hiring posts to Google Sheets")
+        else:
+            logger.info("No new hiring posts to add (all duplicates)")
+
+        return len(new_rows)

@@ -1,6 +1,7 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────────────
-# setup_cron.sh — Deploy YouTube Competitor Tracker on Hostinger KVM 2
+# setup_cron.sh — Deploy Daily Automation on Hostinger KVM 2
+# (YouTube Tracker + LinkedIn Jobs Scraper)
 # 
 # Usage (on your Hostinger server via SSH):
 #   chmod +x setup_cron.sh
@@ -15,11 +16,12 @@ VENV_DIR="$SCRIPT_DIR/venv"
 PYTHON_BIN="python3"
 CRON_HOUR=14       # 2pm
 CRON_MINUTE=0
-TIMEZONE="Asia/Kolkata"   # ← CHANGE THIS to your timezone (e.g., UTC, Asia/Kolkata, America/New_York)
-LOG_FILE="$SCRIPT_DIR/tracker.log"
+TIMEZONE="Asia/Kolkata"   # ← CHANGE THIS to your timezone
+LOG_FILE="$SCRIPT_DIR/automation_combined.log"
 
 echo "═══════════════════════════════════════════════════"
-echo "  YouTube Competitor Tracker — Hostinger Setup"
+echo "  Daily Automation — Hostinger Setup"
+echo "  (YouTube + LinkedIn Scraper)"
 echo "═══════════════════════════════════════════════════"
 echo ""
 
@@ -82,24 +84,24 @@ sys.path.insert(0, '$SCRIPT_DIR')
 from dotenv import load_dotenv
 load_dotenv('$SCRIPT_DIR/.env')
 import os
-required = ['YOUTUBE_API_KEY', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'RECIPIENT_EMAIL']
+required = ['YOUTUBE_API_KEY', 'RECIPIENT_EMAIL', 'LINKEDIN_ACCESS_TOKEN', 'GOOGLE_SHEETS_CREDENTIALS']
 missing = [k for k in required if not os.environ.get(k)]
 if missing:
-    print('  ✗ Missing env vars:', ', '.join(missing))
-    sys.exit(1)
-print('  ✓ All environment variables found')
-print('  ✓ Will send report to:', os.environ['RECIPIENT_EMAIL'])
+    print('  ✗ Missing some env vars:', ', '.join(missing))
+    print('  ⚠ Continuing anyway (some features might be skipped)')
+else:
+    print('  ✓ Core environment variables found')
 "
 
 # ── Step 7: Register cron job ─────────────────────────────────────────────────
 echo ""
 echo "▶ Registering cron job (runs daily at ${CRON_HOUR}:$(printf '%02d' $CRON_MINUTE))..."
 
-CRON_CMD="$CRON_MINUTE $CRON_HOUR * * * $VENV_DIR/bin/python $SCRIPT_DIR/main.py >> $LOG_FILE 2>&1"
-CRON_COMMENT="# YouTube Competitor Tracker — Daily at ${CRON_HOUR}:$(printf '%02d' $CRON_MINUTE)"
+CRON_CMD="$CRON_MINUTE $CRON_HOUR * * * $VENV_DIR/bin/python $SCRIPT_DIR/combined_automation.py >> $LOG_FILE 2>&1"
+CRON_COMMENT="# Daily Automation (YouTube & LinkedIn) — Daily at ${CRON_HOUR}:$(printf '%02d' $CRON_MINUTE)"
 
-# Remove any existing tracker cron entry, then add fresh one
-(crontab -l 2>/dev/null | grep -v "YouTube Competitor Tracker" | grep -v "main.py" ; echo "$CRON_COMMENT"; echo "$CRON_CMD") | crontab -
+# Remove any existing tracker/automation cron entry, then add fresh one
+(crontab -l 2>/dev/null | grep -v "YouTube Competitor Tracker" | grep -v "Daily Automation" | grep -v "combined_automation.py" | grep -v "main.py" ; echo "$CRON_COMMENT"; echo "$CRON_CMD") | crontab -
 
 echo "  ✓ Cron job registered:"
 echo "    $CRON_CMD"
@@ -108,7 +110,7 @@ echo "    $CRON_CMD"
 echo ""
 echo "▶ Configuring log rotation..."
 if command -v logrotate &> /dev/null; then
-    LOGROTATE_CONF="/etc/logrotate.d/yt_competitor_tracker"
+    LOGROTATE_CONF="/etc/logrotate.d/daily_automation"
     sudo bash -c "cat > $LOGROTATE_CONF" <<LOGROTATE_EOF
 $LOG_FILE {
     daily
@@ -130,16 +132,13 @@ echo "════════════════════════�
 echo "  ✅ Setup complete!"
 echo "═══════════════════════════════════════════════════"
 echo ""
-echo "  📅 Tracker will run daily at ${CRON_HOUR}:$(printf '%02d' $CRON_MINUTE) $TIMEZONE"
-echo "  📧 Report will be sent to: $(grep RECIPIENT_EMAIL $SCRIPT_DIR/.env | cut -d= -f2)"
+echo "  📅 Automation will run daily at ${CRON_HOUR}:$(printf '%02d' $CRON_MINUTE) $TIMEZONE"
+echo "  📧 Email reports will be sent to: $(grep RECIPIENT_EMAIL $SCRIPT_DIR/.env | cut -d= -f2)"
 echo "  📋 Logs stored at: $LOG_FILE"
 echo ""
 echo "  To run manually right now:"
-echo "    $VENV_DIR/bin/python $SCRIPT_DIR/main.py"
+echo "    $VENV_DIR/bin/python $SCRIPT_DIR/combined_automation.py"
 echo ""
 echo "  To view logs:"
 echo "    tail -f $LOG_FILE"
-echo ""
-echo "  To edit competitor channels:"
-echo "    nano $SCRIPT_DIR/config.py"
 echo ""

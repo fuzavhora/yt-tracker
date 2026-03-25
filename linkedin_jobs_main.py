@@ -23,8 +23,11 @@ from linkedin_jobs_config import (
     JOB_KEYWORDS, LOCATION, LOOKBACK_HOURS, MAX_JOBS_PER_KEYWORD,
     KEYWORD_CATEGORY_MAP, GOOGLE_SHEET_NAME, WORKSHEET_NAME,
     MAX_POSTS_PER_RUN, POST_DELAY_SECONDS,
+    HIRING_POST_KEYWORDS, MAX_HIRING_POSTS_PER_KEYWORD,
+    HIRING_POSTS_WORKSHEET,
 )
 from linkedin_job_scraper import LinkedInJobScraper
+from linkedin_post_scraper import LinkedInPostScraper
 from google_sheets_client import GoogleSheetsClient
 from linkedin_poster import LinkedInPoster
 
@@ -98,21 +101,36 @@ def run():
 
     logger.info(f"\nTotal unique jobs scraped: {len(all_jobs)}")
 
-    if not all_jobs:
-        logger.info("No new jobs found. Exiting.")
+    # Log summary
+    if all_jobs:
+        for job in all_jobs[:5]:
+            logger.info(
+                f"  {job['job_title'][:40]} | {job['company_name'][:25]} | "
+                f"{job['company_location'][:20]}"
+            )
+        if len(all_jobs) > 5:
+            logger.info(f"  ... and {len(all_jobs) - 5} more")
+
+    # ── 2. Scrape LinkedIn hiring posts via Google ─────────────────────────────
+    hiring_posts = []
+    try:
+        logger.info(f"\nSearching for LinkedIn hiring posts ({len(HIRING_POST_KEYWORDS)} keywords)...")
+        post_scraper = LinkedInPostScraper()
+        hiring_posts = post_scraper.scrape_hiring_posts(
+            keywords=HIRING_POST_KEYWORDS,
+            max_per_keyword=MAX_HIRING_POSTS_PER_KEYWORD,
+        )
+        logger.info(f"Found {len(hiring_posts)} unique hiring posts")
+    except Exception as e:
+        logger.error(f"Hiring posts scraping error: {e}")
+
+    if not all_jobs and not hiring_posts:
+        logger.info("No new jobs or hiring posts found. Exiting.")
         return
 
-    # Log summary
-    for job in all_jobs[:5]:
-        logger.info(
-            f"  {job['job_title'][:40]} | {job['company_name'][:25]} | "
-            f"{job['company_location'][:20]}"
-        )
-    if len(all_jobs) > 5:
-        logger.info(f"  ... and {len(all_jobs) - 5} more")
-
-    # ── 2. Add to Google Sheets ────────────────────────────────────────────────
+    # ── 3. Add to Google Sheets ────────────────────────────────────────────────
     new_count = 0
+    new_posts_count = 0
     if features["sheets"]:
         logger.info("\nAdding jobs to Google Sheets...")
         try:
@@ -123,13 +141,21 @@ def run():
             )
             new_count = sheets.append_jobs(all_jobs)
             logger.info(f"Added {new_count} new jobs to Google Sheets")
+
+            # Save hiring posts to separate tab
+            if hiring_posts:
+                new_posts_count = sheets.append_hiring_posts(
+                    hiring_posts, HIRING_POSTS_WORKSHEET
+                )
+                logger.info(f"Added {new_posts_count} hiring posts to Google Sheets")
+
         except Exception as e:
             logger.error(f"Google Sheets error: {e}")
             sheets = None
     else:
         sheets = None
 
-    # ── 3. Post to LinkedIn ────────────────────────────────────────────────────
+    # ── 4. Post to LinkedIn ────────────────────────────────────────────────────
     if features["posting"]:
         logger.info("\nPosting jobs to LinkedIn...")
         try:
@@ -145,6 +171,7 @@ def run():
 
             posted = poster.post_jobs(
                 jobs=jobs_to_post,
+                hiring_posts=hiring_posts,
                 max_posts=MAX_POSTS_PER_RUN,
                 delay_seconds=POST_DELAY_SECONDS,
             )
@@ -162,6 +189,7 @@ def run():
     # ── Summary ────────────────────────────────────────────────────────────────
     logger.info("\n" + "=" * 60)
     logger.info(f"Run complete. Scraped: {len(all_jobs)} | "
+                f"Hiring posts: {len(hiring_posts)} | "
                 f"New in sheet: {new_count}")
     logger.info("=" * 60 + "\n")
 

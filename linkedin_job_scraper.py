@@ -95,7 +95,9 @@ class LinkedInJobScraper:
 
                 if resp.status_code != 200:
                     logger.warning(
-                        f"HTTP {resp.status_code} for keyword '{keyword}', skipping"
+                        f"HTTP {resp.status_code} for keyword '{keyword}'. "
+                        "LinkedIn might be blocking this request (especially from GitHub Actions). "
+                        "Try running locally or using a proxy."
                     )
                     break
 

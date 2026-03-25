@@ -80,14 +80,17 @@ class LinkedInPoster:
         )
         return text
 
-    def compose_combined_post(self, jobs: list) -> str:
+    def compose_combined_post(self, jobs: list,
+                              hiring_posts=None) -> str:
         """
-        Create a single LinkedIn post listing all hiring companies.
+        Create a single LinkedIn post listing all hiring companies
+        and people sharing hiring posts.
 
         Groups jobs by company and fits within LinkedIn's 3000 char limit.
 
         Args:
-            jobs: List of job dicts
+            jobs: List of job dicts from the job scraper
+            hiring_posts: Optional list of hiring post dicts from Google Search
 
         Returns:
             Formatted combined post text
@@ -98,7 +101,7 @@ class LinkedInPoster:
 
         today = datetime.now().strftime("%d %b %Y")
 
-        # Collect unique company names (preserve insertion order)
+        # Collect unique company names from job listings
         companies = dict.fromkeys(
             job.get("company_name", "Unknown") for job in jobs
         )
@@ -126,9 +129,23 @@ class LinkedInPoster:
             f"I'll share the Google Sheet link with you!\n"
         )
 
+        # Build hiring posts section if available
+        hiring_section = ""
+        if hiring_posts:
+            hiring_lines = ["\nPeople are also sharing these opportunities:\n"]
+            for post in hiring_posts[:10]:  # Limit to 10
+                author = post.get("post_author", "Someone")
+                company = post.get("company_name", "")
+                if company and company != "N/A":
+                    hiring_lines.append(f"- {author} ({company})\n")
+                else:
+                    hiring_lines.append(f"- {author}\n")
+            hiring_section = "".join(hiring_lines)
+
         # Add companies one by one until we hit the char limit
         company_lines = []
-        remaining = MAX_CHARS - len(header) - len(footer) - len(hashtag_line)
+        remaining = (MAX_CHARS - len(header) - len(hiring_section)
+                     - len(footer) - len(hashtag_line))
 
         for company in companies:
             line = f"- {company}\n"
@@ -139,7 +156,8 @@ class LinkedInPoster:
             company_lines.append(line)
             remaining -= len(line)
 
-        return header + "".join(company_lines) + footer + hashtag_line
+        return (header + "".join(company_lines) + hiring_section
+                + footer + hashtag_line)
 
     def create_post(self, text: str) -> bool:
         """
@@ -188,13 +206,14 @@ class LinkedInPoster:
             logger.error(f"Error posting to LinkedIn: {e}")
             return False
 
-    def post_jobs(self, jobs: list, max_posts: int = 10,
-                  delay_seconds: int = 60) -> list:
+    def post_jobs(self, jobs: list, hiring_posts=None,
+                  max_posts: int = 10, delay_seconds: int = 60) -> list:
         """
         Post all jobs as a single combined LinkedIn post.
 
         Args:
             jobs: List of job dicts
+            hiring_posts: Optional list of hiring post dicts from Google Search
             max_posts: Maximum number of jobs to include in the post
             delay_seconds: (unused, kept for backwards compatibility)
 
@@ -211,7 +230,7 @@ class LinkedInPoster:
             f"Creating combined LinkedIn post with {len(jobs_to_post)} jobs..."
         )
 
-        text = self.compose_combined_post(jobs_to_post)
+        text = self.compose_combined_post(jobs_to_post, hiring_posts=hiring_posts)
         success = self.create_post(text)
 
         if success:

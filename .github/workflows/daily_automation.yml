@@ -1,0 +1,68 @@
+name: Combined Daily Automation (LinkedIn & YouTube)
+
+on:
+  schedule:
+    # Runs every day at 10:00 AM IST (4:30 AM UTC)
+    - cron: '30 4 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  run-all-automations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate Secrets
+        run: |
+          echo "🔍 Checking for missing secrets..."
+          if [ -z "${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}" ]; then echo "❌ GOOGLE_SHEETS_CREDENTIALS is missing"; fi
+          if [ -z "${{ secrets.LINKEDIN_ACCESS_TOKEN }}" ]; then echo "❌ LINKEDIN_ACCESS_TOKEN is missing"; fi
+          if [ -z "${{ secrets.LINKEDIN_CLIENT_ID }}" ]; then echo "❌ LINKEDIN_CLIENT_ID is missing"; fi
+          if [ -z "${{ secrets.LINKEDIN_CLIENT_SECRET }}" ]; then echo "❌ LINKEDIN_CLIENT_SECRET is missing"; fi
+          if [ -z "${{ secrets.YOUTUBE_API_KEY }}" ]; then echo "❌ YOUTUBE_API_KEY is missing"; fi
+          if [ -z "${{ secrets.SMTP_HOST }}" ]; then echo "❌ SMTP_HOST is missing"; fi
+          if [ -z "${{ secrets.SMTP_USER }}" ]; then echo "❌ SMTP_USER is missing"; fi
+          if [ -z "${{ secrets.SMTP_PASSWORD }}" ]; then echo "❌ SMTP_PASSWORD is missing"; fi
+          if [ -z "${{ secrets.RECIPIENT_EMAIL }}" ]; then echo "❌ RECIPIENT_EMAIL is missing"; fi
+
+      - name: Run All Automations
+        env:
+          # LinkedIn & Sheets Secrets
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
+          LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+          # YouTube Tracker Secrets
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+        run: python combined_automation.py
+
+      - name: Upload log as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-log-${{ github.run_id }}
+          path: automation_combined.log
+          retention-days: 7

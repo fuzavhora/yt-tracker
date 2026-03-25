@@ -40,6 +40,22 @@ KEYWORD_CATEGORY_MAP = {
     "Digital Marketing": "Marketing",
 }
 
+# ─── HIRING POSTS (Google Search for LinkedIn posts) ────────────────────────
+# Search queries to find hiring-related LinkedIn posts via Google
+HIRING_POST_KEYWORDS = [
+    "hiring software engineer india",
+    "hiring AI ML engineer india",
+    "hiring accountant india",
+    "hiring digital marketing india",
+    "we are hiring india",
+]
+
+# Maximum hiring posts to scrape per keyword
+MAX_HIRING_POSTS_PER_KEYWORD = 10
+
+# Worksheet tab for hiring posts in Google Sheets
+HIRING_POSTS_WORKSHEET = "Hiring Posts"
+
 # ─── LINKEDIN POSTING SETTINGS ───────────────────────────────────────────────
 # Maximum number of jobs to include in the combined LinkedIn post
 MAX_POSTS_PER_RUN = 150

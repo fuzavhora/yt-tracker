@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Competitor Tracker — YouTube Intelligence Automation</title>
+    <title>Fuzail Vhora — AI Automation Suite</title>
     <meta name="description"
-        content="Automatically track outperforming AI niche YouTube videos daily. Get a beautiful email report every day at 2PM with trending competitor content." />
+        content="AI-powered automations: YouTube competitor tracker with daily email reports, and LinkedIn job scraper that auto-posts hiring alerts to your profile." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -711,6 +711,185 @@
             text-transform: uppercase;
         }
 
+        /* ── LINKEDIN JOBS SECTION ────────────────────────────────────────────── */
+        #linkedin-jobs {
+            padding: 80px 24px;
+            background: linear-gradient(180deg, transparent, rgba(10, 102, 194, 0.04), transparent);
+        }
+
+        .lj-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .lj-card {
+            background: var(--dark3);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            transition: transform .3s, box-shadow .3s, border-color .3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lj-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            background: radial-gradient(circle at top left, var(--card-glow, transparent) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity .4s;
+            pointer-events: none;
+        }
+
+        .lj-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.14);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .lj-card:hover::after {
+            opacity: 1;
+        }
+
+        .lj-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 20px;
+            background: var(--icon-bg);
+        }
+
+        .lj-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .lj-desc {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .lj-stats-grid {
+            max-width: 900px;
+            margin: 0 auto 48px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .lj-stat-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 24px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform .3s, border-color .3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lj-stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        .lj-stat-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .lj-post-preview {
+            max-width: 700px;
+            margin: 48px auto 0;
+            background: var(--dark3);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lj-post-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0a66c2, transparent);
+        }
+
+        .lj-post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .lj-post-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0a66c2, #0077b5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .lj-post-author {
+            font-weight: 700;
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .lj-post-time {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .lj-post-body {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.7;
+            white-space: pre-line;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .lj-post-body .company {
+            color: #0a66c2;
+            font-weight: 600;
+        }
+
+        .lj-post-body .highlight {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
         /* ── SOCIAL ────────────────────────────────────────────────────────────── */
         #social {
             padding: 80px 24px;
@@ -1073,15 +1252,14 @@
     <nav>
         <div class="nav-logo">
             <div class="logo-dot"></div>
-            AI Competitor <span>Tracker</span>
+            Fuzail's <span>Automations</span>
         </div>
         <div class="nav-links">
-            <a href="#features">Features</a>
+            <a href="#features">YT Tracker</a>
+            <a href="#linkedin-jobs">Jobs Scraper</a>
             <a href="#how">How It Works</a>
-            <a href="#preview">Preview</a>
             <a href="#contact">Contact</a>
             <a href="#social">Connect</a>
-
         </div>
     </nav>
 
@@ -1308,6 +1486,100 @@
     </section>
 
 
+    <!-- ═══ LINKEDIN JOBS SCRAPER ═════════════════════════════════════════════ -->
+    <section id="linkedin-jobs">
+        <div class="section-header reveal">
+            <div class="section-tag" style="background:rgba(10,102,194,0.12);border-color:rgba(10,102,194,0.25);color:#0a66c2;">LinkedIn Jobs</div>
+            <h2 class="section-title">Daily Job Scraper &<br>Auto-Poster</h2>
+            <p class="section-sub">Scrapes 100+ job listings from LinkedIn every day, saves them to Google Sheets, and auto-posts a "Who's Hiring" alert to your profile.</p>
+        </div>
+
+        <div class="lj-stats-grid">
+            <div class="lj-stat-card reveal" style="--accent: linear-gradient(90deg, #0a66c2, #0077b5);">
+                <div class="stat-num" style="background:linear-gradient(135deg,#0a66c2,#0077b5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;" data-count="114">0</div>
+                <div class="stat-label">Jobs Scraped Daily</div>
+            </div>
+            <div class="lj-stat-card reveal" style="--accent: linear-gradient(90deg, #22c55e, #16a34a);">
+                <div class="stat-num" style="background:linear-gradient(135deg,#22c55e,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;" data-count="6">0</div>
+                <div class="stat-label">Job Categories</div>
+            </div>
+            <div class="lj-stat-card reveal" style="--accent: linear-gradient(90deg, #f59e0b, #d97706);">
+                <div class="stat-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;" data-count="80">0+</div>
+                <div class="stat-label">Companies Tracked</div>
+            </div>
+            <div class="lj-stat-card reveal" style="--accent: linear-gradient(90deg, #7c3aed, #6d28d9);">
+                <div class="stat-num" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">10AM</div>
+                <div class="stat-label">Daily Auto-Post</div>
+            </div>
+        </div>
+
+        <div class="lj-grid">
+            <div class="lj-card reveal" style="--card-glow: rgba(10,102,194,0.2);">
+                <div class="lj-icon" style="--icon-bg: rgba(10,102,194,0.12);">🔍</div>
+                <div class="lj-title">Multi-Keyword Scraping</div>
+                <div class="lj-desc">Scrapes LinkedIn's public job listings for 6 categories: Software Dev, AI/ML, SCADA/PLC, Accounting, Digital Marketing — all within the last 24 hours.</div>
+            </div>
+
+            <div class="lj-card reveal" style="--card-glow: rgba(34,197,94,0.2);">
+                <div class="lj-icon" style="--icon-bg: rgba(34,197,94,0.12);">📊</div>
+                <div class="lj-title">Google Sheets Logging</div>
+                <div class="lj-desc">Every job is logged to Google Sheets with role, company, location, category, and apply link. Automatic deduplication — no repeat entries.</div>
+            </div>
+
+            <div class="lj-card reveal" style="--card-glow: rgba(124,58,237,0.2);">
+                <div class="lj-icon" style="--icon-bg: rgba(124,58,237,0.12);">📢</div>
+                <div class="lj-title">Auto LinkedIn Post</div>
+                <div class="lj-desc">Creates a single "These giants are hiring today!" post listing all companies. Fits within LinkedIn's 3000 char limit with smart truncation.</div>
+            </div>
+
+            <div class="lj-card reveal" style="--card-glow: rgba(245,158,11,0.2);">
+                <div class="lj-icon" style="--icon-bg: rgba(245,158,11,0.12);">🌐</div>
+                <div class="lj-title">Hiring Post Discovery</div>
+                <div class="lj-desc">Searches Google for LinkedIn feed posts where people share hiring opportunities — capturing referrals and direct posts beyond job listings.</div>
+            </div>
+
+            <div class="lj-card reveal" style="--card-glow: rgba(6,182,212,0.2);">
+                <div class="lj-icon" style="--icon-bg: rgba(6,182,212,0.12);">🤖</div>
+                <div class="lj-title">Fully Automated via GitHub Actions</div>
+                <div class="lj-desc">Runs daily at 10 AM IST via GitHub Actions. Zero manual effort — scrape, save, and post all happen automatically in the cloud.</div>
+            </div>
+
+            <div class="lj-card reveal" style="--card-glow: rgba(239,68,68,0.2);">
+                <div class="lj-icon" style="--icon-bg: rgba(239,68,68,0.12);">🔗</div>
+                <div class="lj-title">Engagement-Driven CTA</div>
+                <div class="lj-desc">Posts include "Comment JOB and follow me for the full sheet" — driving engagement, followers, and building your personal brand while helping job seekers.</div>
+            </div>
+        </div>
+
+        <!-- LinkedIn Post Preview -->
+        <div class="lj-post-preview reveal">
+            <div class="lj-post-header">
+                <div class="lj-post-avatar">FV</div>
+                <div>
+                    <div class="lj-post-author">Fuzail Vhora</div>
+                    <div class="lj-post-time">Today at 10:00 AM · Auto-posted</div>
+                </div>
+            </div>
+            <div class="lj-post-body">These giants are hiring today! (11 Mar 2026)
+Go apply now before it's too late!
+
+<span class="company">- Microsoft</span>
+<span class="company">- Google</span>
+<span class="company">- Adobe</span>
+<span class="company">- Cisco</span>
+<span class="company">- PayPal</span>
+<span class="company">- Swiggy</span>
+<span class="company">- Apple</span>
+<span class="company">- Amazon</span>
+...and 72 more companies!
+
+<span class="highlight">Want the full list with apply links? Comment "JOB" and follow me.
+I'll share the Google Sheet link with you!</span>
+
+#hiring #jobs #india #careers #ai #softwaredeveloper</div>
+        </div>
+    </section>
+
     <!-- ═══ CONTACT ══════════════════════════════════════════════════════════ -->
     <section id="contact">
         <div class="section-header reveal">
@@ -1421,8 +1693,8 @@
 
     <!-- ═══ FOOTER ════════════════════════════════════════════════════════════ -->
     <footer>
-        <span class="footer-logo">AI Competitor <span>Tracker</span></span>
-        <p>Hosted on GitHub Pages</p>
+        <span class="footer-logo">Fuzail's <span>Automations</span></span>
+        <p>YouTube Tracker · LinkedIn Jobs Scraper · Hosted on GitHub Pages</p>
         <p style="margin-top:10px; font-size:13px; color:rgba(255,255,255,0.5);">Created by <strong
                 style="color:#ff4757;">Fuzail Vhora</strong></p>
         <p style="margin-top:6px; font-size:11px; opacity:.4;">© 2026 Fuzail Vhora. All rights reserved.</p>
