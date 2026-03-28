@@ -171,16 +171,55 @@ class GoogleSheetsClient:
         return unposted
 
     def mark_as_posted(self, job_url: str):
-        """Mark a job as posted to LinkedIn by setting the column to 'Yes'."""
+        """Mark a single job as posted. Use batch_mark_as_posted for multiple jobs."""
+        self.batch_mark_as_posted([job_url])
+
+    def batch_mark_as_posted(self, job_urls: list):
+        """
+        Mark multiple jobs as posted to LinkedIn in a single batch API call.
+
+        Args:
+            job_urls: List of job URLs to mark as 'Yes'
+        """
+        if not job_urls:
+            return
+
         try:
             url_col_index = HEADERS.index("Job URL") + 1
             posted_col_index = HEADERS.index("Posted To LinkedIn") + 1
 
-            cell = self.worksheet.find(job_url, in_column=url_col_index)
-            if cell:
-                self.worksheet.update_cell(cell.row, posted_col_index, "Yes")
+            # Fetch all URL values in one API call
+            all_urls = self.worksheet.col_values(url_col_index)
+
+            # Build a map of url -> row number (1-indexed, skip header row 1)
+            url_to_row = {}
+            for row_idx, url in enumerate(all_urls[1:], start=2):  # row 2 onward
+                url_to_row[url] = row_idx
+
+            # Build batch update data for all matching URLs
+            updates = []
+            posted_col_letter = chr(ord('A') + posted_col_index - 1)  # e.g. col 9 -> 'I'
+            not_found = []
+
+            for job_url in job_urls:
+                row = url_to_row.get(job_url)
+                if row:
+                    updates.append({
+                        "range": f"{posted_col_letter}{row}",
+                        "values": [["Yes"]]
+                    })
+                else:
+                    not_found.append(job_url)
+
+            if updates:
+                self.worksheet.batch_update(updates)
+                logger.info(f"Batch marked {len(updates)} jobs as posted to LinkedIn")
+
+            if not_found:
+                logger.debug(f"{len(not_found)} job URLs not found in sheet (may already be marked)")
+
         except Exception as e:
-            logger.warning(f"Could not mark job as posted: {e}")
+            logger.warning(f"Could not batch mark jobs as posted: {e}")
 
     # ── Hiring Posts worksheet ────────────────────────────────────────────────
 

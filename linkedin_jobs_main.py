@@ -176,10 +176,11 @@ def run():
                 delay_seconds=POST_DELAY_SECONDS,
             )
 
-            # Mark posted jobs in the sheet
+            # Mark posted jobs in the sheet (batch to avoid rate limits)
             if sheets:
-                for job in posted:
-                    sheets.mark_as_posted(job.get("job_url", ""))
+                posted_urls = [job.get("job_url", "") for job in posted if job.get("job_url")]
+                if posted_urls:
+                    sheets.batch_mark_as_posted(posted_urls)
 
             logger.info(f"Posted {len(posted)} jobs to LinkedIn")
 
