@@ -25,11 +25,21 @@ from linkedin_jobs_config import (
     MAX_POSTS_PER_RUN, POST_DELAY_SECONDS,
     HIRING_POST_KEYWORDS, MAX_HIRING_POSTS_PER_KEYWORD,
     HIRING_POSTS_WORKSHEET,
+    GEMINI_MAX_POSTS_PER_RUN, GEMINI_MIN_CONFIDENCE,
+    GEMINI_EXTRACTED_JOBS_WORKSHEET,
 )
 from linkedin_job_scraper import LinkedInJobScraper
 from linkedin_post_scraper import LinkedInPostScraper
 from google_sheets_client import GoogleSheetsClient
 from linkedin_poster import LinkedInPoster
+
+try:
+    from gemini_post_extractor import LinkedInPostJobExtractor, create_extractor
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
+_gemini_enabled = GEMINI_AVAILABLE
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 LOG_PATH = Path(__file__).parent / "linkedin_jobs.log"
@@ -86,8 +96,60 @@ def run():
 
     features = validate_env()
 
-    # ── 1. Scrape LinkedIn jobs ────────────────────────────────────────────────
-    logger.info(f"\nScraping LinkedIn jobs for {len(JOB_KEYWORDS)} keywords...")
+    # Check Gemini availability
+    gemini_enabled = _gemini_enabled
+    if gemini_enabled and not os.environ.get("GEMINI_API_KEY"):
+        logger.warning("GEMINI_API_KEY not set — skipping AI extraction from posts.")
+        gemini_enabled = False
+
+    # ── 1. Scrape LinkedIn hiring posts FIRST (higher priority) ─────────────────
+    hiring_posts = []
+    gemini_extracted_jobs = []
+    
+    try:
+        logger.info(f"\n🔍 Step 1: Searching LinkedIn hiring posts ({len(HIRING_POST_KEYWORDS)} keywords)...")
+        post_scraper = LinkedInPostScraper()
+        hiring_posts = post_scraper.scrape_hiring_posts(
+            keywords=HIRING_POST_KEYWORDS,
+            max_per_keyword=MAX_HIRING_POSTS_PER_KEYWORD,
+        )
+        logger.info(f"   Found {len(hiring_posts)} hiring posts from HR profiles")
+        
+        # Log post samples
+        if hiring_posts:
+            logger.info("   Sample posts:")
+            for p in hiring_posts[:3]:
+                logger.info(f"   - {p.get('post_title', 'N/A')[:60]}")
+    except Exception as e:
+        logger.error(f"   Hiring posts error: {e}")
+
+    # ── 2. Extract structured jobs from posts using Gemini AI ──────────────────
+    if gemini_enabled and hiring_posts:
+        logger.info(f"\n🤖 Step 2: Extracting jobs from posts using Gemini AI...")
+        try:
+            extractor = create_extractor()
+            gemini_extracted_jobs = extractor.extract_from_posts(
+                posts=hiring_posts,
+                max_posts=GEMINI_MAX_POSTS_PER_RUN,
+                min_confidence=GEMINI_MIN_CONFIDENCE,
+            )
+            
+            # Add source URL to each job
+            for i, job in enumerate(gemini_extracted_jobs):
+                if i < len(hiring_posts):
+                    job["source_url"] = hiring_posts[i].get("post_url", "")
+            
+            logger.info(f"   Extracted {len(gemini_extracted_jobs)} structured jobs")
+            
+            walk_in_drives = [j for j in gemini_extracted_jobs if j.walk_in_drive]
+            if walk_in_drives:
+                logger.info(f"   🔔 Found {len(walk_in_drives)} WALK-IN DRIVE opportunities!")
+                
+        except Exception as e:
+            logger.error(f"   Gemini extraction error: {e}")
+
+    # ── 3. Scrape LinkedIn jobs from job board ─────────────────────────────────
+    logger.info(f"\n📋 Step 3: Scraping LinkedIn job board for {len(JOB_KEYWORDS)} keywords...")
 
     scraper = LinkedInJobScraper()
     all_jobs = scraper.scrape_all_keywords(
@@ -99,40 +161,21 @@ def run():
         enrich=True,
     )
 
-    logger.info(f"\nTotal unique jobs scraped: {len(all_jobs)}")
-
-    # Log summary
+    logger.info(f"   Total unique jobs scraped: {len(all_jobs)}")
     if all_jobs:
-        for job in all_jobs[:5]:
-            logger.info(
-                f"  {job['job_title'][:40]} | {job['company_name'][:25]} | "
-                f"{job['company_location'][:20]}"
-            )
-        if len(all_jobs) > 5:
-            logger.info(f"  ... and {len(all_jobs) - 5} more")
-
-    # ── 2. Scrape LinkedIn hiring posts via Google ─────────────────────────────
-    hiring_posts = []
-    try:
-        logger.info(f"\nSearching for LinkedIn hiring posts ({len(HIRING_POST_KEYWORDS)} keywords)...")
-        post_scraper = LinkedInPostScraper()
-        hiring_posts = post_scraper.scrape_hiring_posts(
-            keywords=HIRING_POST_KEYWORDS,
-            max_per_keyword=MAX_HIRING_POSTS_PER_KEYWORD,
-        )
-        logger.info(f"Found {len(hiring_posts)} unique hiring posts")
-    except Exception as e:
-        logger.error(f"Hiring posts scraping error: {e}")
+        for job in all_jobs[:3]:
+            logger.info(f"   - {job['job_title'][:40]} @ {job['company_name'][:25]}")
 
     if not all_jobs and not hiring_posts:
         logger.info("No new jobs or hiring posts found. Exiting.")
         return
 
-    # ── 3. Add to Google Sheets ────────────────────────────────────────────────
+    # ── 4. Add to Google Sheets ────────────────────────────────────────────────
     new_count = 0
     new_posts_count = 0
+    new_gemini_count = 0
     if features["sheets"]:
-        logger.info("\nAdding jobs to Google Sheets...")
+        logger.info("\n📊 Step 4: Adding data to Google Sheets...")
         try:
             sheets = GoogleSheetsClient(
                 credentials_json=os.environ["GOOGLE_SHEETS_CREDENTIALS"],
@@ -140,24 +183,31 @@ def run():
                 worksheet_name=WORKSHEET_NAME,
             )
             new_count = sheets.append_jobs(all_jobs)
-            logger.info(f"Added {new_count} new jobs to Google Sheets")
+            logger.info(f"   Jobs added: {new_count}")
 
             # Save hiring posts to separate tab
             if hiring_posts:
                 new_posts_count = sheets.append_hiring_posts(
                     hiring_posts, HIRING_POSTS_WORKSHEET
                 )
-                logger.info(f"Added {new_posts_count} hiring posts to Google Sheets")
+                logger.info(f"   Hiring posts added: {new_posts_count}")
+            
+            # Save Gemini extracted jobs
+            if gemini_extracted_jobs:
+                new_gemini_count = sheets.append_gemini_jobs(
+                    gemini_extracted_jobs, GEMINI_EXTRACTED_JOBS_WORKSHEET
+                )
+                logger.info(f"   AI-extracted jobs added: {new_gemini_count}")
 
         except Exception as e:
-            logger.error(f"Google Sheets error: {e}")
+            logger.error(f"   Google Sheets error: {e}")
             sheets = None
     else:
         sheets = None
 
-    # ── 4. Post to LinkedIn ────────────────────────────────────────────────────
+    # ── 5. Post to LinkedIn ────────────────────────────────────────────────────
     if features["posting"]:
-        logger.info("\nPosting jobs to LinkedIn...")
+        logger.info("\n📤 Step 5: Posting jobs to LinkedIn...")
         try:
             poster = LinkedInPoster(
                 access_token=os.environ["LINKEDIN_ACCESS_TOKEN"]
@@ -182,16 +232,23 @@ def run():
                 if posted_urls:
                     sheets.batch_mark_as_posted(posted_urls)
 
-            logger.info(f"Posted {len(posted)} jobs to LinkedIn")
+            logger.info(f"   Posted {len(posted)} items to LinkedIn")
 
         except Exception as e:
-            logger.error(f"LinkedIn posting error: {e}")
+            logger.error(f"   LinkedIn posting error: {e}")
 
     # ── Summary ────────────────────────────────────────────────────────────────
+    walk_in_count = len([j for j in gemini_extracted_jobs if j.walk_in_drive]) if gemini_extracted_jobs else 0
+    
     logger.info("\n" + "=" * 60)
-    logger.info(f"Run complete. Scraped: {len(all_jobs)} | "
-                f"Hiring posts: {len(hiring_posts)} | "
-                f"New in sheet: {new_count}")
+    logger.info("📊 RUN SUMMARY")
+    logger.info(f"  • LinkedIn Jobs scraped: {len(all_jobs)}")
+    logger.info(f"  • HR Hiring posts found: {len(hiring_posts)}")
+    logger.info(f"  • AI-extracted jobs: {len(gemini_extracted_jobs)}")
+    logger.info(f"  • Walk-in drives: {walk_in_count}")
+    logger.info(f"  • Jobs added to sheet: {new_count}")
+    logger.info(f"  • Hiring posts in sheet: {new_posts_count}")
+    logger.info(f"  • AI jobs in sheet: {new_gemini_count}")
     logger.info("=" * 60 + "\n")
 
 

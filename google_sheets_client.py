@@ -36,6 +36,24 @@ HIRING_POSTS_HEADERS = [
     "Posted To LinkedIn",
 ]
 
+GEMINI_EXTRACTED_HEADERS = [
+    "Date Scraped",
+    "Job Title",
+    "Company Name",
+    "Location",
+    "Job Type",
+    "Experience Required",
+    "Salary Range",
+    "Skills Required",
+    "Contact Info",
+    "Application Link",
+    "Walk-in Drive",
+    "Interview Date",
+    "Confidence Score",
+    "Source URL",
+    "Posted To LinkedIn",
+]
+
 
 class GoogleSheetsClient:
     """Read/write job data to Google Sheets."""
@@ -283,5 +301,78 @@ class GoogleSheetsClient:
             logger.info(f"Added {len(new_rows)} new hiring posts to Google Sheets")
         else:
             logger.info("No new hiring posts to add (all duplicates)")
+
+        return len(new_rows)
+
+    # ── Gemini Extracted Jobs worksheet ─────────────────────────────────────────
+
+    def _get_gemini_worksheet(self, worksheet_name: str):
+        """Get or create the Gemini Extracted Jobs worksheet."""
+        try:
+            ws = self.spreadsheet.worksheet(worksheet_name)
+        except gspread.WorksheetNotFound:
+            logger.info(f"Worksheet '{worksheet_name}' not found, creating it...")
+            ws = self.spreadsheet.add_worksheet(
+                title=worksheet_name, rows=1000, cols=len(GEMINI_EXTRACTED_HEADERS)
+            )
+
+        first_row = ws.row_values(1)
+        if not first_row or first_row != GEMINI_EXTRACTED_HEADERS:
+            ws.update("A1", [GEMINI_EXTRACTED_HEADERS])
+            logger.info("Gemini Extracted Jobs sheet headers initialised.")
+
+        return ws
+
+    def append_gemini_jobs(self, jobs: list, worksheet_name: str) -> int:
+        """
+        Append AI-extracted jobs from LinkedIn posts to the worksheet.
+
+        Args:
+            jobs: List of ExtractedJob objects from gemini_post_extractor
+            worksheet_name: Name of the worksheet tab
+
+        Returns:
+            Number of new jobs added
+        """
+        ws = self._get_gemini_worksheet(worksheet_name)
+
+        try:
+            url_col = GEMINI_EXTRACTED_HEADERS.index("Source URL") + 1
+            existing_urls = set(ws.col_values(url_col)[1:])
+        except Exception:
+            existing_urls = set()
+
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        new_rows = []
+        for job in jobs:
+            source_url = job.get("source_url", "")
+            if source_url in existing_urls:
+                continue
+
+            row = [
+                today,
+                job.get("job_title", "N/A"),
+                job.get("company_name", "N/A"),
+                job.get("company_location", "N/A"),
+                job.get("job_type", "Not specified"),
+                job.get("experience_required", "Not specified"),
+                job.get("salary_range", "Not disclosed"),
+                job.get("skills_required", "N/A"),
+                job.get("contact_info", "Not provided"),
+                job.get("application_link", "Not provided"),
+                job.get("walk_in_drive", "No"),
+                job.get("interview_date", "Not specified"),
+                job.get("confidence_score", "0.5"),
+                source_url,
+                "No",
+            ]
+            new_rows.append(row)
+
+        if new_rows:
+            ws.append_rows(new_rows, value_input_option="USER_ENTERED")
+            logger.info(f"Added {len(new_rows)} new AI-extracted jobs to Google Sheets")
+        else:
+            logger.info("No new AI-extracted jobs to add (all duplicates)")
 
         return len(new_rows)

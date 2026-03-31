@@ -42,12 +42,15 @@ KEYWORD_CATEGORY_MAP = {
 
 # ─── HIRING POSTS (Google Search for LinkedIn posts) ────────────────────────
 # Search queries to find hiring-related LinkedIn posts via Google
+# Keywords designed to capture HR posts with job opportunities in last 24 hours
 HIRING_POST_KEYWORDS = [
-    "hiring software engineer india",
-    "hiring AI ML engineer india",
-    "hiring accountant india",
-    "hiring digital marketing india",
     "we are hiring india",
+    "hiring software engineer india",
+    "walk in drive hiring india",
+    "walk-in interview today india",
+    "immediate joining jobs india",
+    "urgent requirement jobs india",
+    "job opportunity work from home india",
 ]
 
 # Maximum hiring posts to scrape per keyword
@@ -62,6 +65,29 @@ MAX_POSTS_PER_RUN = 150
 
 # Delay in seconds between LinkedIn posts
 POST_DELAY_SECONDS = 60
+
+# ─── GEMINI AI SETTINGS ───────────────────────────────────────────────────────
+# Maximum posts to process with Gemini AI per run
+GEMINI_MAX_POSTS_PER_RUN = 50
+
+# Minimum confidence score (0.0-1.0) for extracted jobs
+GEMINI_MIN_CONFIDENCE = 0.5
+
+# Worksheet tab name for AI-extracted job posts
+GEMINI_EXTRACTED_JOBS_WORKSHEET = "AI Extracted Jobs"
+
+# ─── WALK-IN DRIVE KEYWORDS ───────────────────────────────────────────────────
+# Keywords that indicate walk-in drives (for filtering)
+WALK_IN_KEYWORDS = [
+    "walk in",
+    "walk-in",
+    "walkin",
+    "walk-in drive",
+    "walk-in interview",
+    "direct interview",
+    "campus drive",
+    "hiring drive",
+]
 
 # Hashtag mapping by category
 CATEGORY_HASHTAGS = {
